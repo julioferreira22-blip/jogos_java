@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caçador de Estrelas — Strike Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #060012;
+      --panel: rgba(18, 8, 40, 0.85);
+      --accent: #a855f7;
+      --accent2: #c084fc;
+      --glow: rgba(168, 85, 247, 0.45);
+      --text: #e9d5ff;
+      --muted: #9b87c9;
+      --green: #34d399;
+      --orange: #fbbf24;
+      --red: #f87171;
+      --hard: #818cf8;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Exo 2', system-ui, sans-serif;
+      background: 
+        radial-gradient(ellipse at 20% 0%, #1a0a3a 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, #0f0628 0%, transparent 45%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    /* stars background decoration */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        radial-gradient(1.5px 1.5px at 10% 20%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 70%, rgba(200,180,255,0.35) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 70% 15%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 90% 55%, rgba(180,160,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 50% 40%, rgba(255,255,255,0.25) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header {
+      text-align: center;
+      padding: 22px 16px 8px;
+      position: relative;
+      z-index: 1;
+    }
+    header h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: 3px;
+      background: linear-gradient(120deg, #e9d5ff, #c084fc, #a855f7, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 18px var(--glow));
+      margin-bottom: 4px;
+    }
+    header p {
+      font-size: 0.95rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .game-wrapper {
+      position: relative;
+      margin: 12px 0 8px;
+      background: linear-gradient(145deg, rgba(30, 12, 60, 0.9), rgba(12, 4, 28, 0.95));
+      border-radius: 20px;
+      padding: 10px;
+      box-shadow: 
+        0 0 0 1px rgba(168, 85, 247, 0.35),
+        0 0 40px rgba(124, 58, 237, 0.25),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+      z-index: 1;
+    }
+
+    #gameCanvas {
+      background: #04000e;
+      border-radius: 14px;
+      display: block;
+      border: 2px solid rgba(124, 58, 237, 0.5);
+      touch-action: none;
+      box-shadow: inset 0 0 60px rgba(80, 30, 160, 0.15);
+    }
+
+    /* ===== TELAS ===== */
+    .tela {
+      position: absolute;
+      top: 10px; left: 10px;
+      width: calc(100% - 20px);
+      height: calc(100% - 20px);
+      background: rgba(8, 2, 22, 0.92);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+    .tela h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.7rem;
+      color: var(--accent2);
+      margin-bottom: 10px;
+      text-shadow: 0 0 24px var(--glow);
+      letter-spacing: 2px;
+    }
+    .tela p {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+      text-align: center;
+      max-width: 340px;
+      line-height: 1.5;
+    }
+    .tela .pontuacao-final {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.2rem;
+      color: #f0abfc;
+      margin-bottom: 14px;
+      background: rgba(124, 58, 237, 0.2);
+      padding: 10px 28px;
+      border-radius: 40px;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+    }
+
+    .botoes-tela {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .modos {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: 16px;
+    }
+    .modos button {
+      width: 100%;
+      padding: 13px 16px;
+      font-size: 0.98rem;
+      text-align: left;
+      font-family: 'Exo 2', sans-serif;
+      border-radius: 12px;
+      transition: all 0.25s ease;
+    }
+    .modos button span {
+      display: block;
+      font-size: 0.76rem;
+      opacity: 0.8;
+      font-weight: 400;
+      margin-top: 3px;
+    }
+    .modos button.facil   { background: linear-gradient(135deg, #059669, #10b981); box-shadow: 0 4px 18px rgba(16,185,129,0.3); }
+    .modos button.medio   { background: linear-gradient(135deg, #d97706, #f59e0b); box-shadow: 0 4px 18px rgba(245,158,11,0.3); }
+    .modos button.dificil { background: linear-gradient(135deg, #dc2626, #ef4444); box-shadow: 0 4px 18px rgba(239,68,68,0.3); }
+    .modos button.hard    { background: linear-gradient(135deg, #4f46e5, #7c3aed); border: 1px solid #a5b4fc; box-shadow: 0 4px 18px rgba(99,102,241,0.35); }
+
+    .modos button.bloqueado {
+      background: #15101f !important;
+      color: #5b5670 !important;
+      cursor: not-allowed;
+      opacity: 0.65;
+      border: 1px solid #2a2438;
+      box-shadow: none !important;
+    }
+    .modos button.bloqueado::after { content: " 🔒"; }
+
+    button {
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: white;
+      border: none;
+      padding: 12px 26px;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'Exo 2', sans-serif;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: all 0.22s ease;
+      box-shadow: 0 4px 18px rgba(124, 58, 237, 0.4);
+      letter-spacing: 0.5px;
+    }
+    button:hover:not(.bloqueado) {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 6px 28px rgba(168, 85, 247, 0.55);
+    }
+    button:active:not(.bloqueado) { transform: scale(0.97); }
+    button.secundario {
+      background: transparent;
+      border: 1.5px solid rgba(168, 85, 247, 0.6);
+      color: var(--accent2);
+      box-shadow: none;
+    }
+    button.secundario:hover {
+      background: rgba(168, 85, 247, 0.15);
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.25);
+    }
+    button.grande {
+      padding: 15px 52px;
+      font-size: 1.2rem;
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 2px;
+    }
+
+    .info {
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      z-index: 1;
+      position: relative;
+    }
+    .info span {
+      background: rgba(30, 15, 55, 0.7);
+      padding: 7px 14px;
+      border-radius: 30px;
+      border: 1px solid rgba(124, 58, 237, 0.35);
+      font-size: 0.88rem;
+      color: var(--text);
+      backdrop-filter: blur(6px);
+    }
+    .info strong { color: #f0abfc; font-family: 'Orbitron', sans-serif; font-size: 0.9rem; }
+
+    .menu-config {
+      position: absolute;
+      inset: 0;
+      background: rgba(6, 0, 18, 0.96);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+      border-radius: 14px;
+    }
+    .menu-config.ativo { display: flex; }
+    .menu-box {
+      background: linear-gradient(160deg, #1a0a35, #0e0520);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      border-radius: 18px;
+      padding: 24px 28px;
+      width: 90%;
+      max-width: 310px;
+      text-align: center;
+      box-shadow: 0 0 40px rgba(124, 58, 237, 0.2);
+    }
+    .menu-box h3 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--accent2);
+      margin-bottom: 16px;
+      font-size: 1.15rem;
+      letter-spacing: 1px;
+    }
+    .setting { margin: 14px 0; text-align: left; }
+    .setting label { display: block; color: var(--muted); margin-bottom: 5px; font-size: 0.88rem; }
+    .setting input[type=range] { width: 100%; accent-color: var(--accent); }
+    .setting .val { color: #f0abfc; font-size: 0.82rem; margin-top: 3px; }
+    .menu-btns { display: flex; gap: 10px; justify-content: center; margin-top: 18px; }
+
+    .instrucoes {
+      max-width: 640px;
+      margin: 12px auto 30px;
+      background: rgba(20, 8, 45, 0.55);
+      padding: 18px 24px;
+      border-radius: 14px;
+      border-left: 4px solid var(--accent);
+      backdrop-filter: blur(8px);
+      z-index: 1;
+      position: relative;
+    }
+    .instrucoes h2 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--accent2);
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+    }
+    .instrucoes ul { list-style: none; }
+    .instrucoes li {
+      margin: 7px 0;
+      font-size: 0.9rem;
+      padding-left: 20px;
+      position: relative;
+      color: var(--muted);
+    }
+    .instrucoes li::before {
+      content: "◆";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-size: 0.65rem;
+      top: 3px;
+    }
+
+    footer {
+      margin-top: auto;
+      padding: 14px;
+      text-align: center;
+      color: #5b5670;
+      font-size: 0.8rem;
+      z-index: 1;
+      position: relative;
+    }
+
+    .escondida { display: none !important; }
+
+    .botoes-jogo {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 8px;
+      flex-wrap: wrap;
+      z-index: 1;
+      position: relative;
+    }
+
+    #modoAtualInfo {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 6px;
+      letter-spacing: 0.5px;
+      z-index: 1;
+      position: relative;
+    }
+
+    .zeradas {
+      color: #f0abfc;
+      font-size: 0.95rem;
+      margin-top: 8px;
+      font-family: 'Orbitron', sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>✦ CAÇADOR DE ESTRELAS ✦</h1>
+    <p>Strike Edition — Sobreviva e derrote o Boss</p>
+  </header>
+
+  <div class="game-wrapper">
+    <canvas id="gameCanvas" width="560" height="720"></canvas>
+
+    <!-- START -->
+    <div id="telaStart" class="tela">
+      <h2>✦ Caçador de Estrelas</h2>
+      <p>Derrote o Boss final e zere o jogo.<br>Modos são desbloqueados a cada 10 níveis.</p>
+      <div class="zeradas" id="textoZeradas">Zeradas: 0</div>
+      <div class="botoes-tela" style="margin-top:20px">
+        <button class="grande" onclick="irParaModos()">▶ START</button>
+      </div>
+      <div class="botoes-tela" style="margin-top:12px">
+        <button class="secundario" onclick="abrirConfig()">⚙ Config</button>
+      </div>
+    </div>
+
+    <!-- MODOS -->
+    <div id="telaModos" class="tela escondida">
+      <h2>Escolha o Modo</h2>
+      <p id="avisoModos">Modos bloqueados liberam ao progredir ou após zerar.</p>
+      <div class="modos">
+        <button class="facil" id="btnFacil" onclick="escolherModo('facil')">
+          🟢 FÁCIL
+          <span>Inimigos lentos • Níveis 1–10</span>
+        </button>
+        <button class="medio bloqueado" id="btnMedio" onclick="escolherModo('medio')">
+          🟡 MÉDIO
+          <span>Mais rápidos • WASD completo • Níveis 11–20</span>
+        </button>
+        <button class="dificil bloqueado" id="btnDificil" onclick="escolherModo('dificil')">
+          🔴 DIFÍCIL
+          <span>Estrelas + agressivo • Níveis 21–30</span>
+        </button>
+        <button class="hard bloqueado" id="btnHard" onclick="escolherModo('hard')">
+          🟣 HARD
+          <span>Máxima pressão • Boss no nível 40</span>
+        </button>
+      </div>
+      <div class="botoes-tela">
+        <button class="secundario" onclick="voltarStart()">← Voltar</button>
+      </div>
+    </div>
+
+    <!-- GAME OVER -->
+    <div id="telaGameOver" class="tela escondida">
+      <h2>💥 Missão Falhou</h2>
+      <div class="pontuacao-final">Pontuação: <span id="pontuacaoFinal">0</span></div>
+      <div id="modoAtual" style="margin-bottom:14px; color:var(--muted);"></div>
+      <div class="botoes-tela">
+        <button onclick="reiniciarJogo()">🔄 Reiniciar</button>
+        <button class="secundario" onclick="voltarStart()">🏠 Menu</button>
+      </div>
+    </div>
+
+    <!-- VITÓRIA -->
+    <div id="telaVitoria" class="tela escondida">
+      <h2>🎉 PARABÉNS!</h2>
+      <p>Você derrotou o Boss e zerou o jogo!</p>
+      <div class="pontuacao-final">Pontuação: <span id="pontuacaoVitoria">0</span></div>
+      <div class="zeradas" id="textoZeradasVitoria">Zeradas: 1</div>
+      <div class="botoes-tela" style="margin-top:16px">
+        <button onclick="voltarStart()">🏠 Menu Principal</button>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="menuConfig" class="menu-config">
+      <div class="menu-box">
+        <h3>⚙ CONFIGURAÇÕES</h3>
+        <div class="setting">
+          <label>Sensibilidade (não usada — só teclado)</label>
+          <input type="range" id="sensMouse" min="0.08" max="0.40" step="0.01" value="0.20">
+          <div class="val">Valor: <span id="valMouse">0.20</span></div>
+        </div>
+        <div class="setting">
+          <label>Velocidade do Teclado (WASD)</label>
+          <input type="range" id="sensKey" min="3" max="10" step="0.5" value="5.5">
+          <div class="val">Valor: <span id="valKey">5.5</span></div>
+        </div>
+        <div class="menu-btns">
+          <button onclick="fecharConfig()">Fechar</button>
+          <button onclick="aplicarConfig()">Aplicar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info">
+    <span>⭐ <strong id="pontos">0</strong></span>
+    <span>❤️ <strong id="vidas">3</strong></span>
+    <span>⚡ <strong id="special">100</strong></span>
+    <span>📈 Nv.<strong id="nivel">1</strong></span>
+    <span>🏆 <strong id="recorde">0</strong></span>
+  </div>
+  <div id="modoAtualInfo"></div>
+
+  <div class="botoes-jogo">
+    <button onclick="abrirConfig()">⚙ Config</button>
+    <button class="secundario" id="btnPausa" onclick="togglePausa()" style="display:none">⏸ Pausar</button>
+  </div>
+
+  <div class="instrucoes">
+    <h2>Como Jogar</h2>
+    <ul>
+      <li><strong>W A S D</strong> — mover a nave (cima, esquerda, baixo, direita)</li>
+      <li><strong>ESPAÇO</strong> — Special Weapon (gasta energia)</li>
+      <li>Naves dropam <strong>❤️ cura</strong> (mais comum em modos difíceis)</li>
+      <li>Asteroides descem retos • Naves e estrelas se movem lateralmente</li>
+      <li>A cada 10 níveis o modo avança • Boss no nível 40 (HARD)</li>
+      <li>Power-ups: <strong>P</strong> fogo • <strong>S</strong> velocidade • <strong>E</strong> energia</li>
+    </ul>
+  </div>
+
+  <footer>Caçador de Estrelas × Strike Edition • HTML + CSS + JavaScript</footer>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let config = { mouseSens: 0.20, keySpeed: 5.5 };
+    const savedCfg = localStorage.getItem('cacadorConfig');
+    if (savedCfg) {
+      try { config = { ...config, ...JSON.parse(savedCfg) }; } catch(e){}
+    }
+    document.getElementById('sensMouse').value = config.mouseSens;
+    document.getElementById('sensKey').value = config.keySpeed;
+    document.getElementById('valMouse').textContent = config.mouseSens;
+    document.getElementById('valKey').textContent = config.keySpeed;
+    document.getElementById('sensMouse').oninput = e => document.getElementById('valMouse').textContent = e.target.value;
+    document.getElementById('sensKey').oninput = e => document.getElementById('valKey').textContent = e.target.value;
+
+    let zeradas = parseInt(localStorage.getItem('cacadorZeradas') || '0');
+    let modosLiberados = JSON.parse(localStorage.getItem('cacadorModos') || '["facil"]');
+
+    function salvarProgresso() {
+      localStorage.setItem('cacadorZeradas', zeradas);
+      localStorage.setItem('cacadorModos', JSON.stringify(modosLiberados));
+    }
+
+    function atualizarBotoesModos() {
+      const mapa = { facil: 'btnFacil', medio: 'btnMedio', dificil: 'btnDificil', hard: 'btnHard' };
+      for (const m of ['facil','medio','dificil','hard']) {
+        const btn = document.getElementById(mapa[m]);
+        if (modosLiberados.includes(m) || zeradas > 0) btn.classList.remove('bloqueado');
+        else btn.classList.add('bloqueado');
+      }
+      if (zeradas > 0) {
+        document.getElementById('avisoModos').textContent = 'Todos os modos liberados! Escolha livremente.';
+      }
+    }
+
+    document.getElementById('textoZeradas').textContent = 'Zeradas: ' + zeradas;
+
+    let pontos = 0, vidas = 3, special = 100, power = 1;
+    let recorde = parseInt(localStorage.getItem('recordeEstrelas') || '0');
+    let jogoAtivo = false, pausado = false, frame = 0;
+    let modo = 'facil', nivel = 1, scoreParaNivel = 0;
+    document.getElementById('recorde').textContent = recorde;
+
+    const nave = { x: 254, y: 620, w: 52, h: 46, invuln: 0 };
+    const Y_MIN = 300, Y_MAX = 660;
+
+    let estrelas = [], inimigos = [], tiros = [], tirosInimigo = [];
+    let powerups = [], particulas = [], specialTiros = [];
+    let boss = null, bossAtivo = false;
+
+    const coresEstrelas = ['#fbbf24','#f472b6','#34d399','#60a5fa','#c084fc','#fb923c','#a5f3fc'];
+    const teclas = { esquerda: false, direita: false, cima: false, baixo: false, special: false };
+    // Só teclado WASD (sem mouse)
+    document.addEventListener('keydown', e => {
+      const k = e.key.toLowerCase();
+      if (k === 'a' || e.key === 'ArrowLeft')  teclas.esquerda = true;
+      if (k === 'd' || e.key === 'ArrowRight') teclas.direita = true;
+      if (k === 'w' || e.key === 'ArrowUp')    teclas.cima = true;
+      if (k === 's' || e.key === 'ArrowDown')  teclas.baixo = true;
+      if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); teclas.special = true; }
+      if (k === 'p') togglePausa();
+      if (e.key === 'Escape') abrirConfig();
+    });
+    document.addEventListener('keyup', e => {
+      const k = e.key.toLowerCase();
+      if (k === 'a' || e.key === 'ArrowLeft')  teclas.esquerda = false;
+      if (k === 'd' || e.key === 'ArrowRight') teclas.direita = false;
+      if (k === 'w' || e.key === 'ArrowUp')    teclas.cima = false;
+      if (k === 's' || e.key === 'ArrowDown')  teclas.baixo = false;
+      if (e.key === ' ' || e.code === 'Space') teclas.special = false;
+    });
+
+    function chanceCura() {
+      if (modo === 'facil') return 0.07;
+      if (modo === 'medio') return 0.12;
+      if (modo === 'dificil') return 0.18;
+      return 0.25;
+    }
+
+    function criarEstrela() {
+      if (estrelas.length >= 4) return;
+      estrelas.push({
+        x: 40 + Math.random() * (canvas.width - 100), y: -50,
+        tamanho: 30 + Math.random() * 16,
+        vy: 0.48 + Math.random() * 0.35,
+        vx: (Math.random() - 0.5) * 1.0,   // estrelas se movem lateralmente
+        cor: coresEstrelas[Math.floor(Math.random() * coresEstrelas.length)],
+        rot: 0, rotV: (Math.random() - 0.5) * 0.04
+      });
+    }
+
+    function criarInimigo() {
+      const r = Math.random();
+      let tipo = 0;
+      if (r > 0.48) tipo = 1;
+      if (r > 0.78) tipo = 2;
+
+      // velocidade base + sutil por modo
+      let velBase = 0.9;
+      if (modo === 'medio') velBase = 1.25;
+      if (modo === 'dificil') velBase = 1.55;
+      if (modo === 'hard') velBase = 1.95;
+      velBase += Math.floor(nivel / 12) * 0.12;
+
+      // HP sutilmente maior com dificuldade
+      let hp = 1;
+      if (tipo === 1) hp = modo === 'hard' ? 3 : (modo === 'dificil' ? 2 : 2);
+      if (tipo === 2) hp = modo === 'hard' ? 7 : (modo === 'dificil' ? 6 : (modo === 'medio' ? 5 : 4));
+      if (tipo === 0) hp = modo === 'hard' ? 2 : 1;
+
+      inimigos.push({
+        x: 30 + Math.random() * (canvas.width - 80), y: -50,
+        w: tipo === 2 ? 50 : (tipo === 1 ? 36 : 30),
+        h: tipo === 2 ? 44 : (tipo === 1 ? 30 : 28),
+        hp,
+        vy: velBase + Math.random() * 0.7,
+        // só naves (tipo 1) se movem lateralmente; asteroides (0 e 2) descem retos
+        vx: tipo === 1 ? (Math.random() < 0.5 ? 1.6 : -1.6) : 0,
+        tipo,
+        timerTiro: 45 + Math.random() * 55,
+        rot: Math.random() * Math.PI * 2
+      });
+    }
+
+    function criarPowerup(x, y) {
+      let tipo = Math.random() < chanceCura() ? 'H' : (Math.random() < 0.4 ? 'P' : (Math.random() < 0.7 ? 'S' : 'E'));
+      powerups.push({ x, y, tipo, vy: 1.85 });
+    }
+
+    function explodir(x, y, cor, n = 12) {
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const s = 1.1 + Math.random() * 3.2;
+        particulas.push({
+          x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s,
+          life: 15 + Math.random()*15, cor, size: 2 + Math.random()*2.4
+        });
+      }
+    }
+
+    function spawnBoss() {
+      boss = {
+        x: canvas.width / 2 - 75, y: 28,
+        w: 150, h: 85,
+        hp: 520, hpMax: 520,
+        timerTiro: 50, timerSpawn: 60
+      };
+      bossAtivo = true;
+      inimigos = []; estrelas = []; tirosInimigo = [];
+    }
+
+    function desenharFundo() {
+      const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      g.addColorStop(0, '#08001a');
+      g.addColorStop(0.4, '#0e0228');
+      g.addColorStop(1, '#050010');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // estrelas de fundo sutis
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      for (let i = 0; i < 55; i++) {
+        const x = (i * 53 + 17) % canvas.width;
+        const y = (i * 79 + 31 + frame * 0.08) % canvas.height;
+        ctx.beginPath();
+        ctx.arc(x, y, (i % 4 === 0) ? 1.5 : 0.9, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function desenharNave() {
+      if (nave.invuln > 0 && Math.floor(frame / 3) % 2 === 0) return;
+      const x = nave.x, y = nave.y, w = nave.w, h = nave.h;
+
+      // corpo
+      ctx.fillStyle = '#a855f7';
+      ctx.beginPath();
+      ctx.moveTo(x + w/2, y);
+      ctx.lineTo(x + 5, y + h - 5);
+      ctx.lineTo(x + w - 5, y + h - 5);
+      ctx.closePath();
+      ctx.fill();
+
+      // asas
+      ctx.fillStyle = '#7c3aed';
+      ctx.beginPath();
+      ctx.moveTo(x + 8, y + h - 14);
+      ctx.lineTo(x - 12, y + h + 5);
+      ctx.lineTo(x + 16, y + h - 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x + w - 8, y + h - 14);
+      ctx.lineTo(x + w + 12, y + h + 5);
+      ctx.lineTo(x + w - 16, y + h - 3);
+      ctx.closePath();
+      ctx.fill();
+
+      // cockpit
+      ctx.fillStyle = '#e0f2fe';
+      ctx.beginPath();
+      ctx.ellipse(x + w/2, y + 15, 7, 10, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.beginPath();
+      ctx.ellipse(x + w/2 - 2, y + 12, 3, 4, 0, 0, Math.PI*2);
+      ctx.fill();
+
+      // propulsor
+      ctx.fillStyle = '#f0abfc';
+      ctx.beginPath();
+      ctx.moveTo(x + w/2 - 5, y + h - 5);
+      ctx.lineTo(x + w/2, y + h + 12 + Math.sin(frame * 0.35) * 2.5);
+      ctx.lineTo(x + w/2 + 5, y + h - 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#fef3c7';
+      ctx.beginPath();
+      ctx.moveTo(x + w/2 - 2.5, y + h - 3);
+      ctx.lineTo(x + w/2, y + h + 6);
+      ctx.lineTo(x + w/2 + 2.5, y + h - 3);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function desenharEstrela(e) {
+      const cx = e.x + e.tamanho/2, cy = e.y + e.tamanho/2;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(e.rot);
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 === 0 ? e.tamanho/2 : e.tamanho/2 * 0.4;
+        const a = (i * Math.PI) / 5 - Math.PI/2;
+        const px = Math.cos(a) * r, py = Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fillStyle = e.cor;
+      ctx.shadowColor = e.cor;
+      ctx.shadowBlur = 14;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.beginPath();
+      ctx.arc(0, 0, e.tamanho * 0.11, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function desenharAsteroide(e) {
+      ctx.save();
+      ctx.translate(e.x + e.w/2, e.y + e.h/2);
+      ctx.rotate(e.rot);
+      ctx.fillStyle = e.tipo === 2 ? '#6b6560' : '#9a948e';
+      ctx.beginPath();
+      for (let i = 0; i < 7; i++) {
+        const ang = (i / 7) * Math.PI * 2;
+        const raio = (e.w/2) * (0.72 + Math.sin(i * 2.1) * 0.28);
+        const px = Math.cos(ang) * raio, py = Math.sin(ang) * raio;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.beginPath();
+      ctx.arc(-5, -4, e.w * 0.14, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function desenharNaveInimiga(e) {
+      const x = e.x, y = e.y, w = e.w, h = e.h;
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.moveTo(x + w/2, y + h);
+      ctx.lineTo(x, y);
+      ctx.lineTo(x + w, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#b91c1c';
+      ctx.fillRect(x - 7, y + 5, 9, 11);
+      ctx.fillRect(x + w - 2, y + 5, 9, 11);
+      ctx.fillStyle = '#fca5a5';
+      ctx.beginPath();
+      ctx.ellipse(x + w/2, y + 9, 5.5, 6.5, 0, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    function desenharInimigo(e) {
+      if (e.tipo === 1) desenharNaveInimiga(e);
+      else desenharAsteroide(e);
+    }
+
+    function desenharBoss() {
+      if (!boss) return;
+      const b = boss;
+      // sombra
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(b.x + 6, b.y + 6, b.w, b.h);
+      // corpo
+      ctx.fillStyle = '#3b1d7a';
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.fillStyle = '#6d28d9';
+      ctx.fillRect(b.x + 12, b.y + 16, b.w - 24, 22);
+      // centro
+      ctx.fillStyle = '#c084fc';
+      ctx.beginPath();
+      ctx.ellipse(b.x + b.w/2, b.y + 42, 28, 20, 0, 0, Math.PI*2);
+      ctx.fill();
+      // olhos
+      ctx.fillStyle = '#f87171';
+      ctx.beginPath();
+      ctx.arc(b.x + 42, b.y + 38, 9, 0, Math.PI*2);
+      ctx.arc(b.x + b.w - 42, b.y + 38, 9, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#fef2f2';
+      ctx.beginPath();
+      ctx.arc(b.x + 42, b.y + 36, 3.5, 0, Math.PI*2);
+      ctx.arc(b.x + b.w - 42, b.y + 36, 3.5, 0, Math.PI*2);
+      ctx.fill();
+      // asas
+      ctx.fillStyle = '#4c1d95';
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y + 22);
+      ctx.lineTo(b.x - 35, b.y + 55);
+      ctx.lineTo(b.x + 12, b.y + 58);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(b.x + b.w, b.y + 22);
+      ctx.lineTo(b.x + b.w + 35, b.y + 55);
+      ctx.lineTo(b.x + b.w - 12, b.y + 58);
+      ctx.closePath();
+      ctx.fill();
+
+      // barra de vida
+      const barH = 220, barW = 16, barX = 14, barY = 130;
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(barX - 3, barY - 3, barW + 6, barH + 6);
+      const pct = Math.max(0, b.hp / b.hpMax);
+      const grad = ctx.createLinearGradient(0, barY + barH, 0, barY);
+      grad.addColorStop(0, '#ef4444');
+      grad.addColorStop(0.5, '#eab308');
+      grad.addColorStop(1, '#22c55e');
+      ctx.fillStyle = grad;
+      ctx.fillRect(barX, barY + barH * (1 - pct), barW, barH * pct);
+      ctx.fillStyle = '#e9d5ff';
+      ctx.font = 'bold 11px Orbitron, sans-serif';
+      ctx.fillText('BOSS', barX - 4, barY - 10);
+    }
+
+    function subirNivel() {
+      nivel++;
+      document.getElementById('nivel').textContent = nivel;
+      scoreParaNivel = 0;
+
+      // Desbloqueia e troca de modo a cada 10 níveis
+      if (nivel >= 11) {
+        liberarModo('medio');
+        if (nivel < 21) modo = 'medio';
+      }
+      if (nivel >= 21) {
+        liberarModo('dificil');
+        if (nivel < 31) modo = 'dificil';
+      }
+      if (nivel >= 31) {
+        liberarModo('hard');
+        modo = 'hard';
+      }
+      if (nivel >= 40 && !bossAtivo) spawnBoss();
+      atualizarInfoModo();
+    }
+
+    function liberarModo(m) {
+      if (!modosLiberados.includes(m)) {
+        modosLiberados.push(m);
+        salvarProgresso();
+        // feedback visual rápido
+        const nomes = { medio: 'MÉDIO', dificil: 'DIFÍCIL', hard: 'HARD' };
+        if (nomes[m]) {
+          const el = document.getElementById('modoAtualInfo');
+          if (el) el.textContent = '✦ Modo ' + nomes[m] + ' desbloqueado!';
+        }
+      }
+    }
+
+    function atualizarInfoModo() {
+      const nomes = { facil: 'FÁCIL', medio: 'MÉDIO', dificil: 'DIFÍCIL', hard: 'HARD' };
+      let txt = 'Modo: ' + nomes[modo] + '  •  Nível ' + nivel;
+      if (bossAtivo) txt += '  •  ⚠ BOSS';
+      document.getElementById('modoAtualInfo').textContent = txt;
+    }
+
+    // threshold mais alto = progressão mais lenta
+    const PTS_POR_NIVEL = 680;
+
+    function atualizar() {
+      if (!jogoAtivo || pausado) return;
+      frame++;
+      desenharFundo();
+
+      // movimento só WASD
+      if (teclas.esquerda) nave.x -= config.keySpeed;
+      if (teclas.direita)  nave.x += config.keySpeed;
+      nave.x = Math.max(6, Math.min(canvas.width - nave.w - 6, nave.x));
+
+      if (teclas.cima)  nave.y -= config.keySpeed * 0.72;
+      if (teclas.baixo) nave.y += config.keySpeed * 0.72;
+      nave.y = Math.max(Y_MIN, Math.min(Y_MAX, nave.y));
+
+      if (nave.invuln > 0) nave.invuln--;
+
+      if (teclas.special && special >= 15 && frame % 3 === 0) {
+        special = Math.max(0, special - 3);
+        document.getElementById('special').textContent = Math.floor(special);
+        const cx = nave.x + nave.w/2;
+        specialTiros.push({ x: cx - 16, y: nave.y, vy: -11 });
+        specialTiros.push({ x: cx, y: nave.y - 5, vy: -12.5 });
+        specialTiros.push({ x: cx + 16, y: nave.y, vy: -11 });
+      }
+
+      const rate = Math.max(5, 13 - power * 2);
+      if (frame % rate === 0) {
+        const cx = nave.x + nave.w/2;
+        if (power === 1) tiros.push({ x: cx, y: nave.y, vy: -9.5, dmg: 1 });
+        else if (power === 2) {
+          tiros.push({ x: cx-9, y: nave.y, vy: -9.5, dmg: 1 });
+          tiros.push({ x: cx+9, y: nave.y, vy: -9.5, dmg: 1 });
+        } else {
+          tiros.push({ x: cx-14, y: nave.y, vy: -9.5, dmg: 1 });
+          tiros.push({ x: cx, y: nave.y-3, vy: -10.5, dmg: 2 });
+          tiros.push({ x: cx+14, y: nave.y, vy: -9.5, dmg: 1 });
+        }
+      }
+
+      // BOSS
+      if (bossAtivo && boss) {
+        boss.timerTiro--;
+        if (boss.timerTiro <= 0) {
+          const qtd = 2 + Math.floor(Math.random() * 2);
+          for (let i = 0; i < qtd; i++) {
+            tirosInimigo.push({
+              x: boss.x + 25 + Math.random() * (boss.w - 50),
+              y: boss.y + boss.h,
+              vy: 4.2 + Math.random() * 2.0,
+              r: 6 + Math.random() * 2.5,
+              vx: (Math.random() - 0.5) * 2.2
+            });
+          }
+          boss.timerTiro = 42 + Math.random() * 38;
+        }
+        boss.timerSpawn--;
+        if (boss.timerSpawn <= 0) {
+          if (Math.random() < 0.2) criarEstrela();
+          else criarInimigo();
+          boss.timerSpawn = 55 + Math.random() * 50;
+        }
+        for (let i = tiros.length-1; i >= 0; i--) {
+          const t = tiros[i];
+          if (t.x > boss.x && t.x < boss.x + boss.w && t.y > boss.y && t.y < boss.y + boss.h) {
+            boss.hp -= t.dmg; tiros.splice(i, 1); explodir(t.x, t.y, '#c084fc', 5);
+            if (boss.hp <= 0) {
+              explodir(boss.x + boss.w/2, boss.y + boss.h/2, '#a855f7', 45);
+              bossAtivo = false; boss = null; vitoria(); return;
+            }
+          }
+        }
+        for (let i = specialTiros.length-1; i >= 0; i--) {
+          const s = specialTiros[i];
+          if (s.x > boss.x-6 && s.x < boss.x+boss.w+6 && s.y > boss.y && s.y < boss.y+boss.h) {
+            boss.hp -= 4; explodir(s.x, s.y, '#a5f3fc', 7); specialTiros.splice(i, 1);
+            if (boss.hp <= 0) {
+              explodir(boss.x + boss.w/2, boss.y + boss.h/2, '#a855f7', 45);
+              bossAtivo = false; boss = null; vitoria(); return;
+            }
+          }
+        }
+        desenharBoss();
+      }
+
+      if (!bossAtivo) {
+        if ((modo === 'dificil' || modo === 'hard') && frame % 170 === 0) criarEstrela();
+        let spawnRate = 68;
+        if (modo === 'medio') spawnRate = 50;
+        if (modo === 'dificil') spawnRate = 38;
+        if (modo === 'hard') spawnRate = 28;
+        spawnRate = Math.max(20, spawnRate - Math.floor(nivel / 9));
+        if (frame % spawnRate === 0) criarInimigo();
+      }
+
+      // ESTRELAS
+      for (let i = estrelas.length-1; i >= 0; i--) {
+        const e = estrelas[i];
+        e.y += e.vy; e.x += e.vx;
+        if (e.x < 8 || e.x > canvas.width - e.tamanho - 8) e.vx *= -1;
+        e.rot += e.rotV;
+
+        if (nave.x < e.x + e.tamanho && nave.x + nave.w > e.x &&
+            nave.y < e.y + e.tamanho && nave.y + nave.h > e.y) {
+          pontos += 35; scoreParaNivel += 35;
+          document.getElementById('pontos').textContent = pontos;
+          explodir(e.x + e.tamanho/2, e.y + e.tamanho/2, e.cor, 12);
+          estrelas.splice(i, 1);
+          if (scoreParaNivel >= PTS_POR_NIVEL) subirNivel();
+          continue;
+        }
+        if (e.y > canvas.height) {
+          vidas--; document.getElementById('vidas').textContent = vidas;
+          estrelas.splice(i, 1);
+          if (vidas <= 0) { gameOver(); return; }
+          continue;
+        }
+        let dest = false;
+        for (let t = tiros.length-1; t >= 0; t--) {
+          if (tiros[t].x > e.x && tiros[t].x < e.x + e.tamanho &&
+              tiros[t].y > e.y && tiros[t].y < e.y + e.tamanho) {
+            pontos += 20; scoreParaNivel += 20;
+            document.getElementById('pontos').textContent = pontos;
+            explodir(e.x + e.tamanho/2, e.y + e.tamanho/2, e.cor, 10);
+            tiros.splice(t, 1); estrelas.splice(i, 1); dest = true;
+            if (scoreParaNivel >= PTS_POR_NIVEL) subirNivel();
+            break;
+          }
+        }
+        if (!dest) desenharEstrela(e);
+      }
+
+      // TIROS JOGADOR
+      for (let i = tiros.length-1; i >= 0; i--) {
+        const t = tiros[i]; t.y += t.vy;
+        if (t.y < -12) { tiros.splice(i,1); continue; }
+        for (let j = inimigos.length-1; j >= 0; j--) {
+          const e = inimigos[j];
+          if (t.x > e.x && t.x < e.x + e.w && t.y > e.y && t.y < e.y + e.h) {
+            e.hp -= t.dmg; tiros.splice(i,1); explodir(t.x, t.y, '#c084fc', 5);
+            if (e.hp <= 0) {
+              const pts = e.tipo === 2 ? 150 : (e.tipo === 1 ? 85 : 40);
+              pontos += pts; scoreParaNivel += pts;
+              document.getElementById('pontos').textContent = pontos;
+              explodir(e.x + e.w/2, e.y + e.h/2, e.tipo === 1 ? '#ef4444' : '#a8a29e', 13);
+              if (e.tipo === 1 && Math.random() < 0.52) criarPowerup(e.x + e.w/2, e.y + e.h/2);
+              inimigos.splice(j,1);
+              if (scoreParaNivel >= PTS_POR_NIVEL) subirNivel();
+            }
+            break;
+          }
+        }
+      }
+
+      // SPECIAL
+      for (let i = specialTiros.length-1; i >= 0; i--) {
+        const s = specialTiros[i]; s.y += s.vy;
+        if (s.y < -15) { specialTiros.splice(i,1); continue; }
+        for (let j = inimigos.length-1; j >= 0; j--) {
+          const e = inimigos[j];
+          if (s.x > e.x-6 && s.x < e.x+e.w+6 && s.y > e.y && s.y < e.y+e.h) {
+            e.hp -= 3; explodir(s.x, s.y, '#a5f3fc', 7);
+            if (e.hp <= 0) {
+              pontos += 110; scoreParaNivel += 110;
+              document.getElementById('pontos').textContent = pontos;
+              explodir(e.x+e.w/2, e.y+e.h/2, '#a5f3fc', 14);
+              if (e.tipo === 1 && Math.random() < 0.48) criarPowerup(e.x+e.w/2, e.y+e.h/2);
+              inimigos.splice(j,1);
+              if (scoreParaNivel >= PTS_POR_NIVEL) subirNivel();
+            }
+            specialTiros.splice(i,1); break;
+          }
+        }
+      }
+
+      // INIMIGOS
+      for (let i = inimigos.length-1; i >= 0; i--) {
+        const e = inimigos[i];
+        e.y += e.vy;
+        e.x += e.vx;
+        e.rot += (e.tipo === 1 ? 0 : 0.025);
+        if (e.vx !== 0 && (e.x < 8 || e.x > canvas.width - e.w - 8)) e.vx *= -1;
+
+        e.timerTiro--;
+        if (e.timerTiro <= 0 && (e.tipo === 1 || e.tipo === 2)) {
+          tirosInimigo.push({
+            x: e.x + e.w/2, y: e.y + e.h,
+            vy: 5.2 + Math.random() * 1.1, r: 5, vx: 0
+          });
+          e.timerTiro = e.tipo === 2 ? 36 : 52;
+        }
+
+        if (nave.invuln <= 0 &&
+            nave.x < e.x + e.w && nave.x + nave.w > e.x &&
+            nave.y < e.y + e.h && nave.y + nave.h > e.y) {
+          vidas--; document.getElementById('vidas').textContent = vidas;
+          nave.invuln = 68;
+          explodir(nave.x + nave.w/2, nave.y + nave.h/2, '#ef4444', 14);
+          inimigos.splice(i,1);
+          if (vidas <= 0) { gameOver(); return; }
+          continue;
+        }
+        if (e.y > canvas.height + 45) inimigos.splice(i,1);
+        else desenharInimigo(e);
+      }
+
+      // TIROS INIMIGOS
+      for (let i = tirosInimigo.length-1; i >= 0; i--) {
+        const t = tirosInimigo[i];
+        t.y += t.vy;
+        if (t.vx) t.x += t.vx;
+        if (t.y > canvas.height || t.x < -25 || t.x > canvas.width + 25) {
+          tirosInimigo.splice(i,1); continue;
+        }
+        if (nave.invuln <= 0 &&
+            t.x > nave.x + 5 && t.x < nave.x + nave.w - 5 &&
+            t.y > nave.y + 4 && t.y < nave.y + nave.h - 4) {
+          vidas--; document.getElementById('vidas').textContent = vidas;
+          nave.invuln = 68;
+          explodir(nave.x + nave.w/2, nave.y + nave.h/2, '#ef4444', 12);
+          tirosInimigo.splice(i,1);
+          if (vidas <= 0) { gameOver(); return; }
+        } else {
+          ctx.fillStyle = '#f87171';
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, t.r || 4.5, 0, Math.PI*2);
+          ctx.fill();
+          ctx.fillStyle = '#fecaca';
+          ctx.beginPath();
+          ctx.arc(t.x - 1, t.y - 1, (t.r || 4.5) * 0.4, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
+
+      // POWERUPS
+      for (let i = powerups.length-1; i >= 0; i--) {
+        const p = powerups[i]; p.y += p.vy;
+        if (nave.x < p.x+14 && nave.x+nave.w > p.x-14 &&
+            nave.y < p.y+14 && nave.y+nave.h > p.y-14) {
+          if (p.tipo === 'H') {
+            if (vidas < 3) vidas += 1;
+            document.getElementById('vidas').textContent = vidas;
+          } else if (p.tipo === 'P' && power < 3) power++;
+          else if (p.tipo === 'S') config.keySpeed = Math.min(10.5, config.keySpeed + 0.45);
+          else if (p.tipo === 'E') {
+            special = Math.min(100, special + 38);
+            document.getElementById('special').textContent = Math.floor(special);
+          }
+          explodir(p.x, p.y, p.tipo === 'H' ? '#f43f5e' : '#f0abfc', 9);
+          powerups.splice(i,1); continue;
+        }
+        if (p.y > canvas.height + 20) powerups.splice(i,1);
+        else {
+          if (p.tipo === 'H') {
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y + 4);
+            ctx.bezierCurveTo(p.x - 11, p.y - 8, p.x - 11, p.y + 10, p.x, p.y + 15);
+            ctx.bezierCurveTo(p.x + 11, p.y + 10, p.x + 11, p.y - 8, p.x, p.y + 4);
+            ctx.fill();
+          } else {
+            ctx.fillStyle = p.tipo === 'P' ? '#fbbf24' : (p.tipo === 'S' ? '#34d399' : '#c084fc');
+            ctx.fillRect(p.x-11, p.y-11, 22, 22);
+            ctx.fillStyle = '#1a0033';
+            ctx.font = 'bold 13px Exo 2, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(p.tipo, p.x, p.y+5);
+          }
+        }
+      }
+
+      ctx.fillStyle = '#a5f3fc';
+      for (const s of specialTiros) ctx.fillRect(s.x-3, s.y, 6, 12);
+      for (const t of tiros) {
+        ctx.fillStyle = t.dmg > 1 ? '#e0f2fe' : '#c084fc';
+        ctx.fillRect(t.x-2, t.y, 4, 10);
+      }
+
+      for (let i = particulas.length-1; i >= 0; i--) {
+        const p = particulas[i];
+        p.x += p.vx; p.y += p.vy; p.life--;
+        ctx.globalAlpha = Math.max(0, p.life / 26);
+        ctx.fillStyle = p.cor;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+        ctx.globalAlpha = 1;
+        if (p.life <= 0) particulas.splice(i,1);
+      }
+
+      desenharNave();
+
+      if (frame % 28 === 0 && special < 100) {
+        special = Math.min(100, special + 1);
+        document.getElementById('special').textContent = Math.floor(special);
+      }
+
+      requestAnimationFrame(atualizar);
+    }
+
+    function irParaModos() {
+      document.getElementById('telaStart').classList.add('escondida');
+      document.getElementById('telaModos').classList.remove('escondida');
+      atualizarBotoesModos();
+    }
+
+    function voltarStart() {
+      document.getElementById('telaModos').classList.add('escondida');
+      document.getElementById('telaGameOver').classList.add('escondida');
+      document.getElementById('telaVitoria').classList.add('escondida');
+      document.getElementById('telaStart').classList.remove('escondida');
+      document.getElementById('btnPausa').style.display = 'none';
+      document.getElementById('modoAtualInfo').textContent = '';
+      document.getElementById('textoZeradas').textContent = 'Zeradas: ' + zeradas;
+      jogoAtivo = false; bossAtivo = false; boss = null;
+      desenharFundo(); desenharNave();
+    }
+
+    function escolherModo(m) {
+      if (zeradas === 0 && !modosLiberados.includes(m)) return;
+      modo = m;
+      if (m === 'facil') nivel = 1;
+      else if (m === 'medio') nivel = 11;
+      else if (m === 'dificil') nivel = 21;
+      else if (m === 'hard') nivel = 31;
+      document.getElementById('telaModos').classList.add('escondida');
+      comecarJogo();
+    }
+
+    function comecarJogo() {
+      document.getElementById('telaGameOver').classList.add('escondida');
+      document.getElementById('telaVitoria').classList.add('escondida');
+      document.getElementById('btnPausa').style.display = 'inline-block';
+      pontos = 0; vidas = 3; special = 100; power = 1;
+      estrelas = []; inimigos = []; tiros = []; tirosInimigo = [];
+      powerups = []; particulas = []; specialTiros = [];
+      nave.x = 254; nave.y = 620; nave.invuln = 0;
+      frame = 0; scoreParaNivel = 0; boss = null; bossAtivo = false;
+      document.getElementById('pontos').textContent = '0';
+      document.getElementById('vidas').textContent = '3';
+      document.getElementById('special').textContent = '100';
+      document.getElementById('nivel').textContent = nivel;
+      atualizarInfoModo();
+      jogoAtivo = true; pausado = false;
+      atualizar();
+    }
+
+    function reiniciarJogo() {
+      if (modo === 'facil') nivel = 1;
+      else if (modo === 'medio') nivel = 11;
+      else if (modo === 'dificil') nivel = 21;
+      else nivel = 31;
+      comecarJogo();
+    }
+
+    function gameOver() {
+      jogoAtivo = false; bossAtivo = false;
+      document.getElementById('btnPausa').style.display = 'none';
+      if (pontos > recorde) {
+        recorde = pontos;
+        localStorage.setItem('recordeEstrelas', recorde);
+        document.getElementById('recorde').textContent = recorde;
+      }
+      document.getElementById('pontuacaoFinal').textContent = pontos;
+      const nomes = { facil: 'FÁCIL', medio: 'MÉDIO', dificil: 'DIFÍCIL', hard: 'HARD' };
+      document.getElementById('modoAtual').textContent = 'Modo: ' + nomes[modo] + '  •  Nível ' + nivel;
+      document.getElementById('telaGameOver').classList.remove('escondida');
+    }
+
+    function vitoria() {
+      jogoAtivo = false;
+      document.getElementById('btnPausa').style.display = 'none';
+      zeradas++;
+      modosLiberados = ['facil','medio','dificil','hard'];
+      salvarProgresso();
+      if (pontos > recorde) {
+        recorde = pontos;
+        localStorage.setItem('recordeEstrelas', recorde);
+        document.getElementById('recorde').textContent = recorde;
+      }
+      document.getElementById('pontuacaoVitoria').textContent = pontos;
+      document.getElementById('textoZeradasVitoria').textContent = 'Zeradas: ' + zeradas;
+      document.getElementById('telaVitoria').classList.remove('escondida');
+    }
+
+    function togglePausa() {
+      if (!jogoAtivo) return;
+      pausado = !pausado;
+      document.getElementById('btnPausa').textContent = pausado ? '▶ Continuar' : '⏸ Pausar';
+      if (!pausado) atualizar();
+    }
+
+    function abrirConfig() {
+      document.getElementById('menuConfig').classList.add('ativo');
+      pausado = true;
+    }
+    function fecharConfig() {
+      document.getElementById('menuConfig').classList.remove('ativo');
+      if (jogoAtivo) pausado = false;
+    }
+    function aplicarConfig() {
+      config.mouseSens = parseFloat(document.getElementById('sensMouse').value);
+      config.keySpeed = parseFloat(document.getElementById('sensKey').value);
+      localStorage.setItem('cacadorConfig', JSON.stringify(config));
+      fecharConfig();
+    }
+
+    atualizarBotoesModos();
+    desenharFundo();
+    desenharNave();
+  </script>
+</body>
+</html>
